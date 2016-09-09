@@ -36,7 +36,18 @@ void ServicePool::Run()
     for (std::size_t i = 0; i < mxServices.size(); ++i)
     {
         ThreadPtr xThread(new std::thread(std::bind(static_cast<std::size_t(boost::asio::io_service::*)()>(&boost::asio::io_service::run), mxServices[i])));
-        //CPU core°ó¶¨£¿
+#ifdef _MSC_VER
+        SetThreadAffinityMask(xThread->native_handle(), 1UL << i);
+#else
+        cpu_set_t mask;
+        CPU_ZERO(&mask);
+        CPU_SET(i, &mask);
+        if (-1 = pthread_setaffinity_np(xThread, sizeof(mask), &mask))
+        {
+            std::cout << "pthread_setaffinity_np error" << std::endl;
+            exit(1);
+        }
+#endif
         xThreads.push_back(xThread);
     }
 
