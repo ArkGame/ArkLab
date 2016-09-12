@@ -13,10 +13,12 @@
   <ItemGroup>
     <ClInclude Include="Connection.h" />
     <ClInclude Include="ServicePool.h" />
+    <ClInclude Include="TCPServer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Connection.cpp" />
     <ClCompile Include="ServicePool.cpp" />
+    <ClCompile Include="TCPServer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}</ProjectGuid>

@@ -27,3 +27,5 @@
 *.exe
 *.out
 *.app
+/dep/boost
+/dep/boost_1_61_0.zip
