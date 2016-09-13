@@ -62,7 +62,7 @@ namespace ArkNet
 
 
     typedef std::shared_ptr<Connection> ConnectionPtr;
-    typedef std::weak_ptr<Connection> ConnenctionWeakPtr;
+    //typedef std::weak_ptr<Connection> ConnenctionWeakPtr;
 
     class ConnectionManager : public boost::noncopyable 
     {
@@ -91,7 +91,7 @@ namespace ArkNet
             std::for_each(mxConnections.begin(), mxConnections.end(), std::bind(&Connection::Stop, std::placeholders::_1));
             mxConnections.clear();
         }
-    protected:
+
     private:
         boost::mutex mxMutex;
         std::set<ConnectionPtr> mxConnections;

@@ -9,8 +9,8 @@
 
 namespace ArkNet
 {
-    typedef std::function<bool(ConnectionPtr, ConnectionManager&, std::string& strMsg)> MsgCallback;
-    typedef std::unordered_map<std::string, MsgCallback> MsgCallbackMap;
+    typedef std::function<bool(const int, const std::string&, ConnectionPtr&)> MsgCallback;
+    typedef std::unordered_map<const int, MsgCallback> MsgCallbackMap;
 
     typedef std::function<void(ConnectionPtr, ConnectionManager&, int)> ConnectionCallback;
     typedef std::unordered_map<std::string, ConnectionCallback> ConnectionCallbackMap;
@@ -27,9 +27,9 @@ namespace ArkNet
         void Stop();
 
         bool AddConnectionProcessCallback(const std::string& name, ConnectionCallback cb);
-        bool AddMsgProcessCallback(const std::string& name, ConnectionCallback cb);
+        bool AddMsgProcessCallback(const int nMsgID, ConnectionCallback cb);
 
-        bool DoMsg();
+        bool ProcessMsg(const int nMsgID, const std::string& strMsg, ConnectionPtr conn);
         bool DoConnectionEvent(int nEvent, ConnectionPtr connection);
 
     protected:

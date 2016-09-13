@@ -100,7 +100,7 @@ namespace ArkNet
         mxResponseBuffer.sgetn(&strMsg[0], nPacketLength);
         mxResponseBuffer.consume(nPacketLength);
 
-        mxServer.ProcessMsg(msg, shared_from_this());
+        mxServer.ProcessMsg(strMsg, shared_from_this());
 
         boost::asio::async_read(mxSocket, mxResponseBuffer, 
             std::bind(&Connection::HandleReadHeader, 
