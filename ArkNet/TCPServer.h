@@ -9,42 +9,43 @@
 
 namespace ArkNet
 {
-    typedef std::function<bool(const int, const std::string&, ConnectionPtr&)> MsgCallback;
-    typedef std::unordered_map<const int, MsgCallback> MsgCallbackMap;
 
-    typedef std::function<void(ConnectionPtr, ConnectionManager&, int)> ConnectionCallback;
-    typedef std::unordered_map<std::string, ConnectionCallback> ConnectionCallbackMap;
+typedef std::function<bool(const int, const std::string&, ConnectionPtr&)> MsgCallback;
+typedef std::unordered_map<const int, MsgCallback> MsgCallbackMap;
 
-    class TCPServer : public boost::noncopyable
-    {
-        friend class Connection;
+typedef std::function<void(int, ConnectionPtr)> ConnectionCallback;
+typedef std::unordered_map<std::string, ConnectionCallback> ConnectionCallbackMap;
 
-    public:
-        explicit TCPServer(ServicePool& ios, std::string address, unsigned short port);
-        ~TCPServer();
+class TCPServer : public boost::noncopyable
+{
+    friend class Connection;
 
-        void Start();
-        void Stop();
+public:
+    explicit TCPServer(ServicePool& ios, std::string address, unsigned short port);
+    ~TCPServer();
 
-        bool AddConnectionProcessCallback(const std::string& name, ConnectionCallback cb);
-        bool AddMsgProcessCallback(const int nMsgID, ConnectionCallback cb);
+    void Start();
+    void Stop();
 
-        bool ProcessMsg(const int nMsgID, const std::string& strMsg, ConnectionPtr conn);
-        bool DoConnectionEvent(int nEvent, ConnectionPtr connection);
+    bool AddConnectionProcessCallback(const std::string& name, ConnectionCallback cb);
+    bool AddMsgProcessCallback(const int nMsgID, MsgCallback cb);
 
-    protected:
-        void HandleAccept(const boost::system::error_code& error);
+    bool ProcessMsg(const int nMsgID, const std::string& strMsg, ConnectionPtr conn);
+    bool DoConnectionEvent(const int nEvent, ConnectionPtr connection);
 
-    private:
-        ServicePool& mxServicePool;
-        boost::asio::io_service& mxIOS;
-        boost::asio::ip::tcp::acceptor mxAcceptor;
-        ConnectionPtr mxConnection;
-        ConnectionManager mxConnectionManager;
-        boost::shared_mutex mxConnectionLock;
-        boost::shared_mutex mxMsgCBLock;
-        MsgCallbackMap mxMsgCallbacks;
-        ConnectionCallbackMap mxConnectionCallbacks;
-    };
+protected:
+    void HandleAccept(const boost::system::error_code& error);
+
+private:
+    ServicePool& mxServicePool;
+    boost::asio::io_service& mxIOS;
+    boost::asio::ip::tcp::acceptor mxAcceptor;
+    ConnectionPtr mxConnection;
+    ConnectionManager mxConnectionManager;
+    boost::shared_mutex mxConnectionCBLock;
+    boost::shared_mutex mxMsgCBLock;
+    MsgCallbackMap mxMsgCallbacks;
+    ConnectionCallbackMap mxConnectionCallbacks;
+};
 
 }
