@@ -1,4 +1,5 @@
 #include "Connection.h"
+#include "TCPServer.h"
 
 namespace ArkNet
 {
@@ -20,8 +21,7 @@ Connection::~Connection()
 
 void Connection::Stop()
 {
-    //TODO:server disconnected event
-
+    mxServer.DoConnectionEvent(Connection::DISCONNECTED, shared_from_this());
     mbConnected = false;
     boost::system::error_code ec;
     mxSocket.close(ec);
@@ -44,19 +44,18 @@ void Connection::Start()
         std::cout << "set tcp::no_delay failed, error info : " << error.message();
     }
 
-    //TODO:server connected event
+    mxServer.DoConnectionEvent(Connection::CONNECTED, shared_from_this());
 
-    //TODO:4是包头长度
+    //4是包头长度
     boost::asio::async_read(mxSocket, mxResponseBuffer, boost::asio::transfer_exactly(4),
-                            std::bind(&Connection::HandleReadHeader,
-                                      shared_from_this(),
-                                      boost::asio::placeholders::error,
-                                      boost::asio::placeholders::bytes_transferred)
+                            boost::bind(&Connection::HandleReadHeader,
+                                        shared_from_this(),
+                                        boost::asio::placeholders::error,
+                                        boost::asio::placeholders::bytes_transferred)
                            );
-
 }
 
-void Connection::HandleReadHeader(const boost::system::error_code& error, std::size_t nTransferedBytes)
+void Connection::HandleReadHeader(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     if (error || !mbConnected)
     {
@@ -64,6 +63,7 @@ void Connection::HandleReadHeader(const boost::system::error_code& error, std::s
         return;
     }
 
+    //拷贝包头出来(4个字节的包体长度)
     boost::asio::streambuf tempbuf;
     boost::asio::buffer_copy(tempbuf.prepare(mxResponseBuffer.size()), mxResponseBuffer.data());
     tempbuf.commit(mxResponseBuffer.size());
@@ -78,15 +78,15 @@ void Connection::HandleReadHeader(const boost::system::error_code& error, std::s
         return;
     }
 
-    boost::asio::async_read(mxSocket, mxResponseBuffer, boost::asio::transfer_at_least(nPacketLength),
-                            std::bind(&Connection::HandleReadBody,
-                                      shared_from_this(),
-                                      boost::asio::placeholders::error,
-                                      boost::asio::placeholders::bytes_transferred)
+    boost::asio::async_read(mxSocket, mxResponseBuffer, boost::asio::transfer_exactly(nPacketLength),
+                            boost::bind(&Connection::HandleReadBody,
+                                        shared_from_this(),
+                                        boost::asio::placeholders::error,
+                                        boost::asio::placeholders::bytes_transferred)
                            );
 }
 
-void Connection::HandleReadBody(const boost::system::error_code& error, std::size_t nTransferedBytes)
+void Connection::HandleReadBody(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     if (error || !mbConnected)
     {
@@ -94,19 +94,22 @@ void Connection::HandleReadBody(const boost::system::error_code& error, std::siz
         return;
     }
 
-    int nPacketLength = static_cast<int>(nTransferedBytes + 4); //???
+    int nPacketLength = static_cast<int>(bytes_transferred + 4); //???
     std::string strMsg;
     strMsg.resize(nPacketLength);
     mxResponseBuffer.sgetn(&strMsg[0], nPacketLength);
     mxResponseBuffer.consume(nPacketLength);
 
-    mxServer.ProcessMsg(strMsg, shared_from_this());
+    //TODO:此处处理数据解析
 
-    boost::asio::async_read(mxSocket, mxResponseBuffer,
-                            std::bind(&Connection::HandleReadHeader,
-                                      shared_from_this(),
-                                      boost::asio::placeholders::error,
-                                      boost::asio::placeholders::bytes_transferred)
+    int nMsgID = 0;
+    mxServer.ProcessMsg(nMsgID, strMsg, shared_from_this());
+
+    boost::asio::async_read(mxSocket, mxResponseBuffer, boost::asio::transfer_exactly(4), //包头4个字节
+                            boost::bind(&Connection::HandleReadHeader,
+                                        shared_from_this(),
+                                        boost::asio::placeholders::error,
+                                        boost::asio::placeholders::bytes_transferred)
                            );
 }
 
@@ -134,9 +137,9 @@ void Connection::HandleWrite(const boost::system::error_code& error)
         {
             boost::asio::async_write(mxSocket,
                                      boost::asio::buffer(mxWriteQueue.front().msg.data(), mxWriteQueue.front().msg.length()),
-                                     std::bind(&Connection::HandleWrite,
-                                               shared_from_this(),
-                                               boost::asio::placeholders::error)
+                                     boost::bind(&Connection::HandleWrite,
+                                                 shared_from_this(),
+                                                 boost::asio::placeholders::error)
                                     );
         }
     }
@@ -151,21 +154,11 @@ void Connection::DoWrite(std::string msg, WriteCallback cb)
     {
         boost::asio::async_write(mxSocket,
                                  boost::asio::buffer(mxWriteQueue.front().msg.data(), mxWriteQueue.front().msg.length()),
-                                 std::bind(&Connection::HandleWrite,
-                                           shared_from_this(),
-                                           boost::asio::placeholders::error)
+                                 boost::bind(&Connection::HandleWrite,
+                                             shared_from_this(),
+                                             boost::asio::placeholders::error)
                                 );
     }
-}
-
-boost::any Connection::GetProperty(const std::string& property)
-{
-    return mxConnectPropertyMap[property];
-}
-
-void Connection::SetProperty(const std::string& property, const boost::any& value)
-{
-    mxConnectPropertyMap[property] = value;
 }
 
 }

@@ -3,21 +3,29 @@
 #include <deque>
 #include <set>
 #include <algorithm>
+#include <memory>
+#include <iostream>
 #include "boost/noncopyable.hpp"
-#include "boost/enable_shared_from_this.hpp"
 #include "boost/asio.hpp"
 #include "boost/any.hpp"
 #include "boost/thread.hpp"
-
+#include <functional>
 
 namespace ArkNet
 {
 
 class TCPServer;
 class ConnectionManager;
-class Connection : boost::noncopyable, boost::enable_shared_from_this<Connection>
+class Connection : boost::noncopyable, std::enable_shared_from_this<Connection>
 {
 public:
+    enum ConnectionState
+    {
+        NONE            = 0,
+        CONNECTED       = 1,
+        DISCONNECTED    = 2,
+    };
+
     explicit Connection(boost::asio::io_service& io, TCPServer& server, ConnectionManager* connMgr);
     ~Connection();
 
@@ -37,13 +45,10 @@ public:
     typedef std::function<void(const boost::system::error_code&)> WriteCallback;
     void WriteMsg(const std::string& msg, const WriteCallback& cb = WriteCallback());
 
-    boost::any GetProperty(const std::string& property);
-    void SetProperty(const std::string& property, const boost::any& value);
-
 protected:
     void Close();
-    void HandleReadHeader(const boost::system::error_code& error, std::size_t nTransferedBytes);
-    void HandleReadBody(const boost::system::error_code& error, std::size_t nTransferedBytes);
+    void HandleReadHeader(const boost::system::error_code& error, std::size_t bytes_transferred);
+    void HandleReadBody(const boost::system::error_code& error, std::size_t bytes_transferred);
     void HandleWrite(const boost::system::error_code& error);
 
     void DoWrite(std::string msg, WriteCallback cb);
@@ -70,8 +75,6 @@ private:
 
 
 typedef std::shared_ptr<Connection> ConnectionPtr;
-//typedef std::weak_ptr<Connection> ConnenctionWeakPtr;
-
 class ConnectionManager : public boost::noncopyable
 {
 public:

@@ -6,12 +6,26 @@ namespace ArkNet
 TCPServer::TCPServer(ServicePool& ios, std::string address, unsigned short port)
     : mxServicePool(ios)
     , mxIOS(ios.GetService())
-    , mxAcceptor(mxIOS, boost::asio::ip::tcp::v4(), port)
+    , mxAcceptor(mxIOS)
 {
-    //session* new_session = new session(io_service_);
-    //acceptor_.async_accept(new_session->socket(),
-    //    boost::bind(&server::handle_accept, this, new_session,
-    //        boost::asio::placeholders::error));
+    boost::system::error_code error;
+
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port);
+    mxAcceptor.open(endpoint.protocol());
+    mxAcceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+    mxAcceptor.bind(endpoint, error);
+    if (error)
+    {
+        std::cout << "Server bind failed: " << error.message() << std::endl;
+        return;
+    }
+
+    mxAcceptor.listen(boost::asio::socket_base::max_connections, error);
+    if (error)
+    {
+        std::cout << "Server listen failed: " << error.message() << std::endl;
+        return;
+    }
 }
 
 TCPServer::~TCPServer()
@@ -21,13 +35,12 @@ TCPServer::~TCPServer()
 
 void TCPServer::Start()
 {
-    mxConnection = std::make_shared<Connection>(std::ref(mxServicePool.GetService()), boost::ref(*this), &mxConnectionManager);
+    mxConnection = std::make_shared<Connection>(std::ref(mxServicePool.GetService()), std::ref(*this), &mxConnectionManager);
     mxAcceptor.async_accept(mxConnection->GetSocket(), boost::bind(&TCPServer::HandleAccept, this, boost::asio::placeholders::error));
 }
 
 void TCPServer::Stop()
 {
-    //boost::system::error_code error;
     mxAcceptor.close();
     mxConnectionManager.StopAll();
 }
@@ -59,7 +72,7 @@ bool TCPServer::AddMsgProcessCallback(const int nMsgID, MsgCallback cb)
 bool TCPServer::ProcessMsg(const int nMsgID, const std::string& strMsg, ConnectionPtr conn)
 {
     boost::shared_lock<boost::shared_mutex> lock(mxMsgCBLock);
-    MsgCallbackMap::iterator iter = mxMsgCallbacks.find(nMsgID);
+    const auto& iter = mxMsgCallbacks.find(nMsgID);
     if (iter == mxMsgCallbacks.end())
     {
         return false;
@@ -68,7 +81,7 @@ bool TCPServer::ProcessMsg(const int nMsgID, const std::string& strMsg, Connecti
     return iter->second(nMsgID, strMsg, std::ref(conn));
 }
 
-bool TCPServer::DoConnectionEvent(const int nEvent, ConnectionPtr connection)
+void TCPServer::DoConnectionEvent(const int nEvent, ConnectionPtr connection)
 {
     boost::shared_lock<boost::shared_mutex> lock(mxConnectionCBLock);
     for (const auto& iter : mxConnectionCallbacks)

@@ -11,7 +11,7 @@ namespace ArkNet
 {
 
 typedef std::function<bool(const int, const std::string&, ConnectionPtr&)> MsgCallback;
-typedef std::unordered_map<const int, MsgCallback> MsgCallbackMap;
+typedef std::map<const int, MsgCallback> MsgCallbackMap;
 
 typedef std::function<void(int, ConnectionPtr)> ConnectionCallback;
 typedef std::unordered_map<std::string, ConnectionCallback> ConnectionCallbackMap;
@@ -31,7 +31,7 @@ public:
     bool AddMsgProcessCallback(const int nMsgID, MsgCallback cb);
 
     bool ProcessMsg(const int nMsgID, const std::string& strMsg, ConnectionPtr conn);
-    bool DoConnectionEvent(const int nEvent, ConnectionPtr connection);
+    void DoConnectionEvent(const int nEvent, ConnectionPtr connection);
 
 protected:
     void HandleAccept(const boost::system::error_code& error);
