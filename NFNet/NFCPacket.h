@@ -24,10 +24,10 @@ public:
         switch(head)
         {
         case MsgHead::NF_IDIP_HEAD_LENGTH:
-            pHead = NF_NEW MsgIDIPHead();
+            pHead = new MsgIDIPHead();
             break;
         case MsgHead::NF_SS_HEAD_LENGTH:
-            pHead = NF_NEW MsgHead();
+            pHead = new MsgHead();
             break;
         default:
             break;
@@ -57,10 +57,10 @@ public:
         switch(head)
         {
         case MsgHead::NF_IDIP_HEAD_LENGTH:
-            pHead = NF_NEW MsgIDIPHead();
+            pHead = new MsgIDIPHead();
             break;
         case MsgHead::NF_SS_HEAD_LENGTH:
-            pHead = NF_NEW MsgHead();
+            pHead = new MsgHead();
             break;
         default:
             break;

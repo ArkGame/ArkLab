@@ -5,6 +5,7 @@
     <ClInclude Include="NFServer.h" />
     <ClInclude Include="NFCPacket.h" />
     <ClInclude Include="NFIPacket.h" />
+    <ClInclude Include="NFIServer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NFServer.cpp" />

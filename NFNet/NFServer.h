@@ -1,7 +1,12 @@
 #pragma once
 #include "NetData.h"
+#include "NFIPacket.h"
+#include "NFIServer.h"
 
-class NFServer
+typedef std::function<int(const NFIPacket& msg)> RECIEVE_FUNCTOR;
+typedef std::function<int(const int nSockIndex, const NF_NET_EVENT nEvent, NFIServer* pNet)> EVENT_FUNCTOR;
+
+class NFServer : public NFIServer
 {
 public:
     template<typename BaseType>
@@ -24,11 +29,14 @@ protected:
 
 private:
     Server mxServer;
+    RECIEVE_FUNCTOR mxRecvFunc;
+    EVENT_FUNCTOR mxEventFunc;
 };
 
 template<typename BaseType>
 NFServer::NFServer(MsgHead::NF_Head nLength, BaseType* pBaseType, int (BaseType::*HandleRecv)(const NFIPacket&), int (BaseType::HandleSocketEvent)(), const int nResetCount /*= 30*/, const float fResetTime /*= 30.f*/)
 {
     mxServer.nHeadLen = nLength;
-
+    mxRecvFunc = std::bind(HandleRecv, pBaseType, std::placeholders::_1);
+    mxEventFunc = std::bind();
 }

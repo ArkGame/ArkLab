@@ -1,4 +1,4 @@
-#include "NFServer.h"
+ï»¿#include "NFServer.h"
 
 #ifdef _MSC_VER
 #include <WS2tcpip.h>
@@ -27,9 +27,7 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
 #ifdef _MSC_VER
     WSADATA wsa_data;
     WSAStartup(0x0201, &wsa_data);
-#endif
 
-#ifdef _MSC_VER
     evthread_use_windows_threads();
 #endif
 
@@ -51,7 +49,7 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
         return false;
     }
 
-    //TODO:Ò»Ğ©ÌØÊâº¯Êı´¦Àí
+    //TODO:ä¸€äº›ç‰¹æ®Šå‡½æ•°å¤„ç†
 
     mxServer.pWorker = new Worker[mxServer.nWorkerNum];
     for(int i = 0; i < mxServer.nWorkerNum; ++i)
@@ -169,7 +167,9 @@ void NFServer::listener_cb(struct evconnlistener* listener, evutil_socket_t fd, 
     pConn->nFD = fd;
     evutil_make_socket_nonblocking(pConn->nFD);
     bufferevent_enable(pConn->pBuffEvent, EV_READ | EV_WRITE);
-    socket_event_cb(pConn->pBuffEvent, eConnected, pConn);
+
+    //TODO:net event
+    socket_event_cb(pConn->pBuffEvent, NF_NET_EVENT_CONNECTED, pConn);
 }
 
 void NFServer::socket_event_cb(struct bufferevent* buffer_event, void* user_data)
@@ -189,13 +189,36 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
     Connection* pConn = (Connection*)user_data;
     while(evbuffer_get_length(input_buffer))
     {
-        pConn->nInBuffLen += evbuffer_remove(input_buffer, pConn->xInBuff[0], eMaxBuffLen - pConn->nInBuffLen);
+        pConn->nInBuffLen += evbuffer_remove(input_buffer, &pConn->xInBuff[0], eMaxBuffLen - pConn->nInBuffLen);
     }
 
+    NFCPacket packet(mxServer.nHeadLen);
     while(true)
     {
         if(pConn->nInBuffLen < IMsgHead::NF_HEAD_LENGTH)
         {
+            return;
+        }
+
+        packet.Reset(mxServer.nHeadLen);
+        const int nUsedLen = packet.DeCode(&pConn->xInBuff[0], pConn->xInBuff.size());
+        if(nUsedLen > (eMaxBuffLen - IMsgHead::NF_HEAD_LENGTH) || nUsedLen <= 0)
+        {
+            CloseConn(pConn);
+            return;
+        }
+
+        //TODO:packetå¤„ç†
+
+        pConn->nInBuffLen -= packet.GetPacketLen();
+        if(pConn->nInBuffLen == 0)
+        {
+            break;
+        }
+        else
+        {
+            assert(pConn->nInBuffLen > 0);
+            memmove(&pConn->xInBuff[0], &pConn->xInBuff[0] + packet.GetPacketLen, pConn->nInBuffLen);
         }
     }
 }

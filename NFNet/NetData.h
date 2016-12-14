@@ -10,6 +10,8 @@
 #include <event2/thread.h>
 #include <thread>
 #include <vector>
+#include <functional>
+#include <memory>
 
 struct Connection;
 struct Worker;
@@ -89,7 +91,6 @@ struct Worker
     struct event_base* pBase;
     std::thread xThread;
     ConnectionList* pConnList;
-
 };
 
 struct Server
@@ -122,3 +123,12 @@ struct Server
     std::thread xThread;
     size_t nHeadLen;
 };
+
+enum NF_NET_EVENT
+{
+    NF_NET_EVENT_EOF = 0x10, /**< eof file reached */
+    NF_NET_EVENT_ERROR = 0x20, /**< unrecoverable error encountered */
+    NF_NET_EVENT_TIMEOUT = 0x40, /**< user-specified timeout reached */
+    NF_NET_EVENT_CONNECTED = 0x80, /**< connect operation finished. */
+};
+
