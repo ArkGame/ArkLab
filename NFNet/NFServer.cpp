@@ -120,7 +120,7 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
     return true;
 }
 
-bool NFServer::Excute()
+bool NFServer::Execute()
 {
     for (int em = 0; em < mxServer.nWorkerNum; em++)
     {
@@ -150,6 +150,19 @@ void NFServer::StopServer()
     if(!mxServer.bStart)
     {
         return;
+    }
+
+    for (int i = 0; i < mxServer.nWorkerNum; ++i)
+    {
+        mxServer.pWorker[i].bExit = false;
+    }
+
+    for (int i = 0; i < mxServer.nWorkerNum; ++i)
+    {
+        if (mxServer.pWorker[i].pThread)
+        {
+            mxServer.pWorker[i].pThread->join();
+        }
     }
 
     struct timeval xDelay = { 2, 0 };
@@ -234,9 +247,9 @@ void NFServer::listener_cb(struct evconnlistener* listener, evutil_socket_t fd, 
 
     //TODO 这里是监听线程，在改数据，改fd，线程安全等等。。
     pConn->nFD = fd;
+    bufferevent_setfd(pConn->pBuffEvent, fd);
     evutil_make_socket_nonblocking(pConn->nFD);
     bufferevent_enable(pConn->pBuffEvent, EV_READ | EV_WRITE);
-
     //pServer->mmFdConect[fd] = pConn;
 
     //TODO:net event 监听线程，去掉，传到主线程里面来
@@ -351,7 +364,14 @@ int NFServer::ThreadServer(void* user_data)
     {
         return -1;
     }
-    event_base_loop(pServer->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+
+    while (!pServer->bNeedCloseListen)
+    {
+        event_base_loop(pServer->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+
+        NFSLEEP(1);
+    }
+
     return 0;//std::this_thread::get_id();
 }
 
@@ -363,22 +383,28 @@ int NFServer::ThreadWorkers(void* user_data)
         return -1;
     }
 
-    event_base_loop(pWorker->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
-
-    const int nSize = pWorker->mSendmsgList.Count();
-    for (int i = 0; i < nSize; i++)
+    while (!pWorker->bExit)
     {
-        SendData xData;
-        if (pWorker->mSendmsgList.Pop(xData))
+        event_base_loop(pWorker->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+
+        const int nSize = pWorker->mSendmsgList.Count();
+        for (int i = 0; i < nSize; i++)
         {
-            Connection* pConect = GetConectionInWoker(pWorker, xData.nSockIndex);
-            if (pConect)
+            SendData xData;
+            if (pWorker->mSendmsgList.Pop(xData))
             {
-                pConect->pBuffEvent;
-                bufferevent_write(pConect->pBuffEvent, xData.strData.c_str(), xData.strData.size());
+                Connection* pConect = GetConectionInWoker(pWorker, xData.nSockIndex);
+                if (pConect)
+                {
+                    pConect->pBuffEvent;
+                    bufferevent_write(pConect->pBuffEvent, xData.strData.c_str(), xData.strData.size());
+                }
             }
         }
+
+        NFSLEEP(1);
     }
+
 
     return 0;//std::this_thread::get_id();
 }

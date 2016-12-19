@@ -104,6 +104,7 @@ struct Worker
         pThread = NULL;
         mnHeadLen = 0;
         pSever = NULL;
+        bExit = false;
     }
 
     inline Connection* GetFreeConn()
@@ -129,6 +130,7 @@ struct Worker
     ConnectionList* pConnList;
     int mnHeadLen;
     NFIServer* pSever;
+    bool bExit;
 
     NFLockFreeQueue<NFCPacket> mReceivemsgList;
     NFLockFreeQueue<SendData> mSendmsgList;
@@ -151,6 +153,7 @@ struct Server
         pWorker = NULL;
         nHeadLen = 0;
         pThread = NULL;
+        bNeedCloseListen = false;
     }
 
     bool bStart;
@@ -165,10 +168,9 @@ struct Server
     Worker* pWorker;
     std::thread* pThread;
     size_t nHeadLen;
+    bool bNeedCloseListen;
     //std::map<int, Connection*> mmFdConect; // fd <--> Conect index
 };
-
-
 
 enum NF_NET_EVENT
 {

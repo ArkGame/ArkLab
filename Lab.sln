@@ -1,28 +1,47 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ArkNet", "ArkNet\ArkNet.vcxproj", "{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NFNet", "NFNet\NFNet.vcxproj", "{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{1D48883A-71BE-4F4C-AA1A-4EB9E119E277}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestServer", "Test\TestServer.vcxproj", "{804B4812-E000-4D55-974C-444E72BEE4ED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Debug|x64.ActiveCfg = Debug|x64
 		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Debug|x64.Build.0 = Debug|x64
+		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Debug|x86.ActiveCfg = Debug|x64
 		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Release|x64.ActiveCfg = Release|x64
 		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Release|x64.Build.0 = Release|x64
+		{4C141E79-2165-4111-8EE7-2D38B0F4EBE0}.Release|x86.ActiveCfg = Release|x64
 		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Debug|x64.ActiveCfg = Debug|x64
 		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Debug|x64.Build.0 = Debug|x64
+		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Debug|x86.ActiveCfg = Debug|x64
 		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Release|x64.ActiveCfg = Release|x64
 		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Release|x64.Build.0 = Release|x64
+		{ED54FFC2-5153-49DA-8A9E-9C04A93A420F}.Release|x86.ActiveCfg = Release|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Debug|x64.ActiveCfg = Debug|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Debug|x64.Build.0 = Debug|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Debug|x86.ActiveCfg = Debug|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Release|x64.ActiveCfg = Release|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Release|x64.Build.0 = Release|x64
+		{804B4812-E000-4D55-974C-444E72BEE4ED}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{804B4812-E000-4D55-974C-444E72BEE4ED} = {1D48883A-71BE-4F4C-AA1A-4EB9E119E277}
 	EndGlobalSection
 EndGlobal

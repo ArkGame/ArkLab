@@ -17,12 +17,11 @@ public:
     ~NFServer();
 
     bool StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum, int nReadTimeout, int nWriteTimeout);
-    bool Excute();
+    bool Execute();
     void StopServer();
 
     bool SendMsg(const NFCPacket& msg, const int nSockIndex, bool bBroadcast);
     bool SendMsg(const char* msg, const uint32_t nLen, const int nSockIndex, bool bBroadcast = false);
-
 
 protected:
     static void listener_cb(struct evconnlistener* listener, evutil_socket_t fd, struct sockaddr* sa, int socklen, void* user_data);
