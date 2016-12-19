@@ -1,5 +1,6 @@
 #pragma once
 
+#include <event2/event-config.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_compat.h>
 #include <event2/buffer.h>
@@ -12,6 +13,11 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include "NFCPacket.h"
+#include <list>
+#include "common/NFQueue.h"
+#include <map>
+#include "common/NFLockFreeQueue.h"
 
 struct Connection;
 struct Worker;
@@ -24,6 +30,7 @@ enum ENetDefine
 
 struct Connection
 {
+public:
     Connection()
     {
         pBuffEvent = NULL;
@@ -62,12 +69,41 @@ struct ConnectionList
     Connection* pListConn;
 };
 
+class NFIServer;
+struct EventData
+{
+    EventData()
+    {
+        nSockIndex = 0;
+        nEvent = 0;
+        pNet = NULL;
+    }
+
+    int         nSockIndex;
+    int         nEvent;
+    NFIServer*  pNet;
+};
+
+struct SendData
+{
+    SendData()
+    {
+        nSockIndex = 0;
+    }
+
+    int         nSockIndex;
+    std::string strData;
+};
+
 struct Worker
 {
     Worker()
     {
         pBase = NULL;
         pConnList = NULL;
+        pThread = NULL;
+        mnHeadLen = 0;
+        pSever = NULL;
     }
 
     inline Connection* GetFreeConn()
@@ -89,8 +125,14 @@ struct Worker
     }
 
     struct event_base* pBase;
-    std::thread xThread;
+    std::thread* pThread;
     ConnectionList* pConnList;
+    int mnHeadLen;
+    NFIServer* pSever;
+
+    NFLockFreeQueue<NFCPacket> mReceivemsgList;
+    NFLockFreeQueue<SendData> mSendmsgList;
+    NFLockFreeQueue<EventData> mEventDataList;
 };
 
 struct Server
@@ -108,6 +150,7 @@ struct Server
         pBase = NULL;
         pWorker = NULL;
         nHeadLen = 0;
+        pThread = NULL;
     }
 
     bool bStart;
@@ -120,9 +163,12 @@ struct Server
     struct evconnlistener* pListener;
     struct event_base* pBase;
     Worker* pWorker;
-    std::thread xThread;
+    std::thread* pThread;
     size_t nHeadLen;
+    //std::map<int, Connection*> mmFdConect; // fd <--> Conect index
 };
+
+
 
 enum NF_NET_EVENT
 {

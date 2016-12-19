@@ -29,9 +29,9 @@
 
 #include <string>
 #include <iostream>
-#include "NFComm/NFCore/NFGUID.h"
-#include "NFComm/NFCore/NFPlatform.h"
-#include "NFComm/NFCore/NFIDataList.h"
+//#include "NFComm/NFCore/NFGUID.h"
+#include "common/NFPlatform.h"
+//#include "NFComm/NFCore/NFIDataList.h"
 
 #pragma pack(push, 1)
 

@@ -66,7 +66,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_X64;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_X64;_DEBUG;_LIB;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)dep;$(SolutionDir)dep\libevent\include;$(SolutionDir)dep\libevent\WIN32-Code;$(SolutionDir)dep\libevent\compat;$(SolutionDir)dep\boost</AdditionalIncludeDirectories>
       <BrowseInformation>false</BrowseInformation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -87,8 +87,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_LIB;_X64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\Dependency;$(SolutionDir)NFComm\NFPluginModule;$(SolutionDir)..\Dependency\Theron\Include;$(SolutionDir)..\Dependency\libevent\include;$(SolutionDir)..\Dependency\libevent\WIN32-Code;$(SolutionDir)..\Dependency\libevent\compat;$(SolutionDir)..\Dependency\boost</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_LIB;_X64;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\dep;$(SolutionDir)NFComm\NFPluginModule;$(SolutionDir).\dep\Theron\Include;$(SolutionDir).\dep\libevent\include;$(SolutionDir).\dep\libevent\WIN32-Code;$(SolutionDir).\dep\libevent\compat;$(SolutionDir).\dep\boost</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
