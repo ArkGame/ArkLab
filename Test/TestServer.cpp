@@ -24,7 +24,7 @@ class TestServerClass
 public:
     TestServerClass()
     {
-        
+
         //pNet = new NFCMulNet(this, &TestServerClass::ReciveHandler, &TestServerClass::EventHandler);
         //pNet->Initialization(10000, 8088, 2, 4);
         //nSendMsgCount = 0;
@@ -47,7 +47,7 @@ public:
     //    nSendMsgCount++;
     //    pNet->SendMsgWithOutHead(nMsgID, msg, nLen, nSockIndex);
     //    //std::cout << " nSendMsgCount: " << nSendMsgCount << "nReciveMsgCount" << nReciveMsgCount << " fd: " << nSockIndex << " msg_id: " << nMsgID /*<<  " data: " << str*/ << " thread_id: " << GetCurrentThreadId() << std::endl;
-    //}    
+    //}
     int ReciveHandler(const NFIPacket& msg)
     {
         //std::string str;
@@ -82,7 +82,7 @@ public:
         int nNowTime = NFTime::GetNowTime();
         int nSpanTime = nNowTime - nLastTime;
         int nAllSpanTime = nNowTime - nStartTime;
-        if (nSpanTime > 5 && nAllSpanTime > 0)
+        if(nSpanTime > 5 && nAllSpanTime > 0)
         {
             nLastTime = nNowTime;
 
@@ -96,8 +96,8 @@ public:
             nLastSendCount = nSendMsgCount;
             nLasterReciveCount = nReciveMsgCount;
 
-            std::cout << " All Send: [" << nSendMsgCount << "] All Receive: [" << nReciveMsgCount << "] All Per Send per second : [" << nToltalPerSend << "] All Per Receive per second : [" << nToltalPerReceive << 
-                "] Last Second Per Send :["<< nLastPerSend << "] Last Second Per Received [" << nLastPerReceive /*<<  " data: " << str*/ << "] thread_id: " << GetCurrentThreadId() << std::endl;
+            std::cout << " All Send: [" << nSendMsgCount << "] All Receive: [" << nReciveMsgCount << "] All Per Send per second : [" << nToltalPerSend << "] All Per Receive per second : [" << nToltalPerReceive <<
+                      "] Last Second Per Send :[" << nLastPerSend << "] Last Second Per Received [" << nLastPerReceive /*<<  " data: " << str*/ << "] thread_id: " << GetCurrentThreadId() << std::endl;
         }
     }
 
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 {
     TestServerClass x;
 
-    while (1)
+    while(1)
     {
         x.Execute();
 

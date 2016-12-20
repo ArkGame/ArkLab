@@ -90,7 +90,7 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
                 //TODO:delete former memory
                 return false;
             }
-            
+
             //set event callbacks
             bufferevent_setcb(pConn->pBuffEvent, read_cb, NULL, socket_event_cb, pConn);
             bufferevent_setwatermark(pConn->pBuffEvent, EV_READ, 0, eMaxBuffLen);
@@ -103,7 +103,7 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
             xDelayWriteTimeout.tv_sec = mxServer.nWriteTimeout;
             xDelayWriteTimeout.tv_usec = 0;
 
-            bufferevent_set_timeouts(pConn->pBuffEvent, &xDelayReadTimeout, &xDelayWriteTimeout);
+            //bufferevent_set_timeouts(pConn->pBuffEvent, &xDelayReadTimeout, &xDelayWriteTimeout);
             pConn->pOwner = &mxServer.pWorker[i];
             pConn = pConn->pNext;
         }
@@ -122,23 +122,32 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
 
 bool NFServer::Execute()
 {
-    for (int em = 0; em < mxServer.nWorkerNum; em++)
+    for(int em = 0; em < mxServer.nWorkerNum; em++)
     {
         NFCPacket xPacket((MsgHead::NF_Head)mxServer.nHeadLen);
         bool bRet = mxServer.pWorker[em].mReceivemsgList.Pop(xPacket);
-        if (bRet && mxRecvFunc)
+        if(bRet && mxRecvFunc)
         {
             mxRecvFunc(xPacket);
         }
     }
 
-    for (int em = 0; em < mxServer.nWorkerNum; em++)
+    for(int em = 0; em < mxServer.nWorkerNum; em++)
     {
         EventData xData;
         bool bRet = mxServer.pWorker[em].mEventDataList.Pop(xData);
-        if (bRet && mxEventFunc)
+        if(bRet && mxEventFunc)
         {
-            mxEventFunc(xData.nSockIndex, (NF_NET_EVENT)xData.nEvent, xData.pNet);
+            if(xData.nEvent == NF_NET_EVENT_CONNECTED)
+            {
+                mmFDWorkerIndex[xData.nSockIndex] = em;
+            }
+            else
+            {
+                mmFDWorkerIndex[xData.nSockIndex] = -1;
+            }
+
+            mxEventFunc(xData.nSockIndex, (NF_NET_EVENT)xData.nEvent, this);
         }
     }
 
@@ -152,14 +161,14 @@ void NFServer::StopServer()
         return;
     }
 
-    for (int i = 0; i < mxServer.nWorkerNum; ++i)
+    for(int i = 0; i < mxServer.nWorkerNum; ++i)
     {
         mxServer.pWorker[i].bExit = false;
     }
 
-    for (int i = 0; i < mxServer.nWorkerNum; ++i)
+    for(int i = 0; i < mxServer.nWorkerNum; ++i)
     {
-        if (mxServer.pWorker[i].pThread)
+        if(mxServer.pWorker[i].pThread)
         {
             mxServer.pWorker[i].pThread->join();
         }
@@ -202,32 +211,28 @@ bool NFServer::SendMsg(const NFCPacket& msg, const int nSockIndex, bool bBroadca
 
 bool NFServer::SendMsg(const char* msg, const uint32_t nLen, const int nSockIndex, bool bBroadcast /*= false*/)
 {
-    //TODO 全发，所有的woker都会遍历一下
-    for (int i = 0; i < mxServer.nWorkerNum; i++)
+    std::map<int, int>::iterator iter = mmFDWorkerIndex.find(nSockIndex);
+    if(iter == mmFDWorkerIndex.end())
     {
-        //     std::map<int, Connection*>::iterator iter = mxServer.mmFdConect.find(nSockIndex);
-        //     if (iter == mxServer.mmFdConect.end())
-        //     {
-        //         return false;
-        //     }
-        // 
-        //         Connection* pConection = iter->second;
-        //         if (NULL == pConection)
-        //         {
-        //             return false;
-        //         }
-
-        Worker* pWork = &mxServer.pWorker[i];
-        if (NULL == pWork)
-        {
-            return false;
-        }
-
-        SendData xData;
-        xData.nSockIndex = nSockIndex;
-        xData.strData = std::string(msg, nLen);
-        pWork->mSendmsgList.Push(xData);
+        return false;
     }
+
+    int nIndex = iter->second;
+    if(nIndex < 0 || nIndex >= mxServer.nWorkerNum)
+    {
+        return false;
+    }
+
+    Worker* pWork = &mxServer.pWorker[nIndex];
+    if(NULL == pWork)
+    {
+        return false;
+    }
+
+    SendData xData;
+    xData.nSockIndex = nSockIndex;
+    xData.strData = std::string(msg, nLen);
+    pWork->mSendmsgList.Push(xData);
 
     return true;
 }
@@ -237,45 +242,27 @@ void NFServer::listener_cb(struct evconnlistener* listener, evutil_socket_t fd, 
     Server* pServer = (Server*)user_data;
     int nCurrent = (pServer->nCurWorker++) % pServer->nWorkerNum;
     Worker& xWorker = pServer->pWorker[nCurrent];
-
-    //TODO 这里见监听线程，这么做需要锁链接么。。
-    Connection* pConn = xWorker.GetFreeConn();
-    if(NULL == pConn)
-    {
-        return;
-    }
-
-    //TODO 这里是监听线程，在改数据，改fd，线程安全等等。。
-    pConn->nFD = fd;
-    bufferevent_setfd(pConn->pBuffEvent, fd);
-    evutil_make_socket_nonblocking(pConn->nFD);
-    bufferevent_enable(pConn->pBuffEvent, EV_READ | EV_WRITE);
-    //pServer->mmFdConect[fd] = pConn;
-
-    //TODO:net event 监听线程，去掉，传到主线程里面来
-    //socket_event_cb(pConn->pBuffEvent, NF_NET_EVENT_CONNECTED, pConn);
+    xWorker.mAccpetSokcetList.Push(fd);
 }
 
 void NFServer::socket_event_cb(struct bufferevent* buffer_event, short events, void* user_data)
 {
     Connection* pConection = (Connection*)user_data;
-    if (NULL == pConection)
+    if(NULL == pConection)
     {
         return;
     }
 
     EventData xdata;
-
     xdata.nEvent = events;
     xdata.nSockIndex = pConection->nFD;
-    if (NULL != pConection->pOwner)
-    {
-        xdata.pNet = pConection->pOwner->pSever;
 
+    if(NULL != pConection->pOwner)
+    {
         pConection->pOwner->mEventDataList.Push(xdata);
 
         pConection->nFD = 0;
-        if (!(events & BEV_EVENT_CONNECTED))
+        if(!(events & BEV_EVENT_CONNECTED))
         {
             CloseConn(pConection);
         }
@@ -292,21 +279,24 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
     }
 
     Connection* pConn = (Connection*)user_data;
-    if (!pConn)
+    if(!pConn)
     {
         return;
     }
 
-    while(evbuffer_get_length(input_buffer))
+    int nMoveLen = input_len;
+    if(input_len > eMaxBuffLen)
     {
-        pConn->nInBuffLen += evbuffer_remove(input_buffer, &pConn->xInBuff[0], eMaxBuffLen - pConn->nInBuffLen);
+        nMoveLen = eMaxBuffLen;
     }
 
-    if (!pConn->pOwner)
+    evbuffer_remove(input_buffer, &pConn->xInBuff[0], nMoveLen);
+
+    if(!pConn->pOwner)
     {
         return;
     }
-    
+
     NFCPacket packet((MsgHead::NF_Head)(pConn->pOwner->mnHeadLen));
     while(true)
     {
@@ -316,7 +306,7 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
         }
 
         packet.Reset((MsgHead::NF_Head)(pConn->pOwner->mnHeadLen));
-        const int nUsedLen = packet.DeCode(&pConn->xInBuff[0], pConn->xInBuff.size());
+        const int nUsedLen = packet.DeCode(&pConn->xInBuff[0], pConn->nInBuffLen);
         if(nUsedLen > (eMaxBuffLen - IMsgHead::NF_HEAD_LENGTH) || nUsedLen <= 0)
         {
             //TODO worker出错了，怎么关掉conn
@@ -365,7 +355,7 @@ int NFServer::ThreadServer(void* user_data)
         return -1;
     }
 
-    while (!pServer->bNeedCloseListen)
+    while(!pServer->bNeedCloseListen)
     {
         event_base_loop(pServer->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
 
@@ -383,18 +373,54 @@ int NFServer::ThreadWorkers(void* user_data)
         return -1;
     }
 
-    while (!pWorker->bExit)
+    while(!pWorker->bExit)
     {
+        const int nSoketSize = pWorker->mAccpetSokcetList.Count();
+        for(int i = 0; i < nSoketSize; i++)
+        {
+            Connection* pConn = pWorker->GetFreeConn();//new Connection();
+            if(NULL == pConn)
+            {
+                continue;
+            }
+
+            int nfd = 0;
+            if(!pWorker->mAccpetSokcetList.Pop(nfd))
+            {
+                continue;
+            }
+
+            //pConn->pBuffEvent = bufferevent_socket_new(pWorker->pBase, nfd, BEV_OPT_CLOSE_ON_FREE);
+            if(NULL == pConn->pBuffEvent)
+            {
+                //TODO:delete former memory
+                return false;
+            }
+
+            ////set event callbacks
+            //bufferevent_setcb(pConn->pBuffEvent, read_cb, NULL, socket_event_cb, pConn);
+            //bufferevent_setwatermark(pConn->pBuffEvent, EV_READ, 0, eMaxBuffLen);
+            //bufferevent_enable(pConn->pBuffEvent, EV_READ | EV_WRITE);
+
+            //TODO 这里是监听线程，在改数据，改fd，线程安全等等。。
+            pConn->nFD = nfd;
+            bufferevent_setfd(pConn->pBuffEvent, nfd);
+            evutil_make_socket_nonblocking(pConn->nFD);
+            bufferevent_enable(pConn->pBuffEvent, EV_READ | EV_WRITE);
+
+            socket_event_cb(pConn->pBuffEvent, NF_NET_EVENT_CONNECTED, pConn);
+        }
+
         event_base_loop(pWorker->pBase, EVLOOP_ONCE | EVLOOP_NONBLOCK);
 
         const int nSize = pWorker->mSendmsgList.Count();
-        for (int i = 0; i < nSize; i++)
+        for(int i = 0; i < nSize; i++)
         {
             SendData xData;
-            if (pWorker->mSendmsgList.Pop(xData))
+            if(pWorker->mSendmsgList.Pop(xData))
             {
                 Connection* pConect = GetConectionInWoker(pWorker, xData.nSockIndex);
-                if (pConect)
+                if(pConect)
                 {
                     pConect->pBuffEvent;
                     bufferevent_write(pConect->pBuffEvent, xData.strData.c_str(), xData.strData.size());
@@ -405,20 +431,19 @@ int NFServer::ThreadWorkers(void* user_data)
         NFSLEEP(1);
     }
 
-
     return 0;//std::this_thread::get_id();
 }
 
 Connection* NFServer::GetConectionInWoker(Worker* pWorker, const int nSocket)
 {
-    if (NULL == pWorker)
+    if(NULL == pWorker)
     {
         return NULL;
     }
 
-    for (Connection* pData = pWorker->pConnList->pHead; pData != pWorker->pConnList->pTail; pData = pData->pNext)
+    for(Connection* pData = pWorker->pConnList->pHead; pData != pWorker->pConnList->pTail; pData = pData->pNext)
     {
-        if (NULL != pData && nSocket == pData->nFD)
+        if(NULL != pData && nSocket == pData->nFD)
         {
             return pData;
         }

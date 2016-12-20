@@ -21,10 +21,11 @@
 
 struct Connection;
 struct Worker;
+class NFIServer;
 
 enum ENetDefine
 {
-    eMaxBuffLen     = 4096,
+    eMaxBuffLen     = 4 * 1024,
     eMaxPackageType = 65535,
 };
 
@@ -47,7 +48,7 @@ public:
     struct bufferevent* pBuffEvent;
     evutil_socket_t nFD;
     int nIndex;
-    std::vector<char> xInBuff;
+    std::vector<char>xInBuff;
     short nInBuffLen;
     std::vector<char> xOutBuff;
     short nOutBuffLen;
@@ -69,19 +70,16 @@ struct ConnectionList
     Connection* pListConn;
 };
 
-class NFIServer;
 struct EventData
 {
     EventData()
     {
         nSockIndex = 0;
         nEvent = 0;
-        pNet = NULL;
     }
 
     int         nSockIndex;
     int         nEvent;
-    NFIServer*  pNet;
 };
 
 struct SendData
@@ -103,7 +101,6 @@ struct Worker
         pConnList = NULL;
         pThread = NULL;
         mnHeadLen = 0;
-        pSever = NULL;
         bExit = false;
     }
 
@@ -129,12 +126,12 @@ struct Worker
     std::thread* pThread;
     ConnectionList* pConnList;
     int mnHeadLen;
-    NFIServer* pSever;
     bool bExit;
 
     NFLockFreeQueue<NFCPacket> mReceivemsgList;
     NFLockFreeQueue<SendData> mSendmsgList;
     NFLockFreeQueue<EventData> mEventDataList;
+    NFLockFreeQueue<int> mAccpetSokcetList;
 };
 
 struct Server
@@ -169,7 +166,6 @@ struct Server
     std::thread* pThread;
     size_t nHeadLen;
     bool bNeedCloseListen;
-    //std::map<int, Connection*> mmFdConect; // fd <--> Conect index
 };
 
 enum NF_NET_EVENT

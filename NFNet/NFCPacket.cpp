@@ -3,14 +3,14 @@
 size_t NFCPacket::DeCode(const char* strData, const size_t unLen)
 {
     //解密--unLen为buff总长度,解包时能用多少是多少
-    if (unLen < pHead->GetHeadLength())
+    if(unLen < pHead->GetHeadLength())
     {
         //长度不够
         return -1;
     }
 
 
-    if (pHead->GetHeadLength() != pHead->DeCode(strData))
+    if(pHead->GetHeadLength() != pHead->DeCode(strData))
     {
         //取包头失败
         return -2;
@@ -18,7 +18,7 @@ size_t NFCPacket::DeCode(const char* strData, const size_t unLen)
 
     //printf("Recv - MsgID:%d \n", pHead->GetMsgID());
 
-    if (pHead->GetMsgLength() > unLen)
+    if(pHead->GetMsgLength() > unLen)
     {
         //总长度不够
         return 0;
@@ -35,7 +35,7 @@ size_t NFCPacket::EnCode(char* pHeadBuffer, const char* strData, const size_t un
 {
     //加密
     //虽多一次copy，但是可以在外加解密而不耦合库
-    if (unLen + pHead->GetHeadLength() > MsgHead::NF_MSG_MAX_LENGTH)
+    if(unLen + pHead->GetHeadLength() > MsgHead::NF_MSG_MAX_LENGTH)
     {
         // 长度过大
         return 0;

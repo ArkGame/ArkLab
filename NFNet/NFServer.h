@@ -11,8 +11,8 @@ class NFServer : public NFIServer
 {
 public:
     template<typename BaseType>
-    NFServer(MsgHead::NF_Head nLength, BaseType* pBaseType, 
-        int (BaseType::*HandleRecv)(const NFIPacket&), int (BaseType::*HandleSocketEvent)(const int, const NF_NET_EVENT, NFIServer*), const int nResetCount = 30, const float fResetTime = 30.f);
+    NFServer(MsgHead::NF_Head nLength, BaseType* pBaseType,
+             int (BaseType::*HandleRecv)(const NFIPacket&), int (BaseType::*HandleSocketEvent)(const int, const NF_NET_EVENT, NFIServer*), const int nResetCount = 30, const float fResetTime = 30.f);
 
     ~NFServer();
 
@@ -35,12 +35,13 @@ protected:
     static int ThreadServer(void* user_data);
     static int ThreadWorkers(void* user_data);
 
-    static Connection* GetConectionInWoker(Worker* pWorker,const int nSocket);
+    static Connection* GetConectionInWoker(Worker* pWorker, const int nSocket);
 
 public:
 
 private:
     Server mxServer;
+    std::map<int, int > mmFDWorkerIndex;
     RECIEVE_FUNCTOR mxRecvFunc;
     EVENT_FUNCTOR mxEventFunc;
 
