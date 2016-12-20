@@ -93,6 +93,19 @@ struct SendData
     std::string strData;
 };
 
+struct ReceiveData
+{
+    ReceiveData()
+    {
+        nSockIndex = 0;
+        nMsgID = 0;
+    }
+
+    int         nSockIndex;
+    int         nMsgID;
+    std::string strMsg;
+};
+
 struct Worker
 {
     Worker()
@@ -128,7 +141,7 @@ struct Worker
     int mnHeadLen;
     bool bExit;
 
-    NFLockFreeQueue<NFCPacket> mReceivemsgList;
+    NFLockFreeQueue<ReceiveData> mReceivemsgList;
     NFLockFreeQueue<SendData> mSendmsgList;
     NFLockFreeQueue<EventData> mEventDataList;
     NFLockFreeQueue<int> mAccpetSokcetList;

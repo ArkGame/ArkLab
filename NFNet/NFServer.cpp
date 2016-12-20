@@ -124,11 +124,16 @@ bool NFServer::Execute()
 {
     for(int em = 0; em < mxServer.nWorkerNum; em++)
     {
+        ReceiveData xReceiveData;
         NFCPacket xPacket((MsgHead::NF_Head)mxServer.nHeadLen);
-        bool bRet = mxServer.pWorker[em].mReceivemsgList.Pop(xPacket);
+        bool bRet = mxServer.pWorker[em].mReceivemsgList.Pop(xReceiveData);
         if(bRet && mxRecvFunc)
         {
-            mxRecvFunc(xPacket);
+            if(xPacket.DeCode(xReceiveData.strMsg.c_str(), xReceiveData.strMsg.size()))
+            {
+                xPacket.SetFd(xReceiveData.nSockIndex);
+                mxRecvFunc(xPacket);
+            }
         }
     }
 
@@ -261,7 +266,6 @@ void NFServer::socket_event_cb(struct bufferevent* buffer_event, short events, v
     {
         pConection->pOwner->mEventDataList.Push(xdata);
 
-        pConection->nFD = 0;
         if(!(events & BEV_EVENT_CONNECTED))
         {
             CloseConn(pConection);
@@ -291,6 +295,7 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
     }
 
     evbuffer_remove(input_buffer, &pConn->xInBuff[0], nMoveLen);
+    pConn->nInBuffLen = nMoveLen;
 
     if(!pConn->pOwner)
     {
@@ -300,19 +305,21 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
     NFCPacket packet((MsgHead::NF_Head)(pConn->pOwner->mnHeadLen));
     while(true)
     {
-        if(pConn->nInBuffLen < IMsgHead::NF_HEAD_LENGTH)
+        if(pConn->nInBuffLen < pConn->pOwner->mnHeadLen)
         {
             return;
         }
 
         packet.Reset((MsgHead::NF_Head)(pConn->pOwner->mnHeadLen));
         const int nUsedLen = packet.DeCode(&pConn->xInBuff[0], pConn->nInBuffLen);
-        if(nUsedLen > (eMaxBuffLen - IMsgHead::NF_HEAD_LENGTH) || nUsedLen <= 0)
+        if(nUsedLen > (eMaxBuffLen - pConn->pOwner->mnHeadLen) || nUsedLen <= 0)
         {
             //TODO worker出错了，怎么关掉conn
             //pConn->pOwner>CloseConn(pConn);
             return;
         }
+
+        packet.SetFd(pConn->nFD);
 
         //TODO:packet处理
 
@@ -326,7 +333,11 @@ void NFServer::read_cb(struct bufferevent* buffer_event, void* user_data)
             assert(pConn->nInBuffLen > 0);
             memmove(&pConn->xInBuff[0], (&pConn->xInBuff[0]) + packet.GetPacketLen(), pConn->nInBuffLen);
 
-            pConn->pOwner->mReceivemsgList.Push(packet);
+            ReceiveData xReceiveData;
+            xReceiveData.nMsgID = packet.GetMsgID();
+            xReceiveData.nSockIndex = packet.GetFd();
+            xReceiveData.strMsg = std::string(packet.GetPacketData(), packet.GetPacketLen());
+            pConn->pOwner->mReceivemsgList.Push(xReceiveData);
         }
     }
 }

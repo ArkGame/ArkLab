@@ -34,7 +34,7 @@ public:
         //nLastSendCount = 0;
         //nLasterReciveCount = 0;
 
-        pNet = new NFServer(IMsgHead::NF_SS_HEAD_LENGTH, this, &TestServerClass::ReciveHandler, &TestServerClass::EventHandler);
+        pNet = new NFServer(IMsgHead::NF_MIN_HEAD_LENGTH, this, &TestServerClass::ReciveHandler, &TestServerClass::EventHandler);
         pNet->StartServer(8088, 4, 8000, 300, 300);
     }
 

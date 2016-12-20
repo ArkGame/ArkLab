@@ -21,6 +21,7 @@ public:
     NFCPacket(MsgHead::NF_Head head)
     {
         munFD = 0;
+        pHead = NULL;
         switch(head)
         {
         case MsgHead::NF_IDIP_HEAD_LENGTH:
@@ -28,6 +29,9 @@ public:
             break;
         case MsgHead::NF_SS_HEAD_LENGTH:
             pHead = new MsgHead();
+            break;
+        case MsgHead::NF_MIN_HEAD_LENGTH:
+            pHead = new MsgMinHead();
             break;
         default:
             break;
@@ -62,12 +66,15 @@ public:
         case MsgHead::NF_SS_HEAD_LENGTH:
             pHead = new MsgHead();
             break;
+        case MsgHead::NF_MIN_HEAD_LENGTH:
+            pHead = new MsgMinHead();
+            break;
         default:
             break;
         }
     }
 
-    virtual const IMsgHead* GetMsgHead() const
+    virtual IMsgHead* GetMsgHead() const
     {
         return pHead;
     }

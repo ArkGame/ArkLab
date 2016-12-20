@@ -39,6 +39,7 @@ struct IMsgHead
 {
     enum NF_Head
     {
+        NF_MIN_HEAD_LENGTH  = 6,
         NF_HEAD_LENGTH      = 8,
         NF_SS_HEAD_LENGTH   = 11,
         NF_IDIP_HEAD_LENGTH = 172,
@@ -125,8 +126,6 @@ public:
         mnData1 = 0;
         mnData2 = 0;
     }
-
-
 
     virtual size_t GetHeadLength() const
     {
@@ -439,6 +438,100 @@ private:
     int32_t    uiResult;            /* ¥ÌŒÛ¬Î */
     char        szRetErrMsg[100];   /* ¥ÌŒÛ–≈œ¢ */
 };
+
+
+class MsgMinHead : public IMsgHead
+{
+public:
+    MsgMinHead()
+    {
+        munSize = 0;
+        munMsgID = 0;
+    }
+
+    virtual int EnCode(char* strData)
+    {
+        uint32_t nOffset = 0;
+
+        uint16_t nMsgID = NF_HTONS(munMsgID);
+        memcpy(strData + nOffset, (void*)(&nMsgID), sizeof(munMsgID));
+        nOffset += sizeof(munMsgID);
+
+        uint32_t nPackSize = munSize + NF_MIN_HEAD_LENGTH;
+        uint32_t nSize = NF_HTONL(nPackSize);
+        memcpy(strData + nOffset, (void*)(&nSize), sizeof(munSize));
+        nOffset += sizeof(munSize);
+
+        if(nOffset != NF_MIN_HEAD_LENGTH)
+        {
+            assert(0);
+        }
+
+        return nOffset;
+    }
+
+    // Message Head[ MsgID(2) | MsgSize(4) ]
+    virtual int DeCode(const char* strData)
+    {
+        uint32_t nOffset = 0;
+
+        uint16_t nMsgID = 0;
+        memcpy(&nMsgID, strData + nOffset, sizeof(munMsgID));
+        munMsgID = NF_NTOHS(nMsgID);
+        nOffset += sizeof(munMsgID);
+
+        uint32_t nPackSize = 0;
+        memcpy(&nPackSize, strData + nOffset, sizeof(munSize));
+        munSize = NF_NTOHL(nPackSize) - NF_MIN_HEAD_LENGTH;
+        nOffset += sizeof(munSize);
+
+        if(nOffset != NF_MIN_HEAD_LENGTH)
+        {
+            assert(0);
+        }
+
+        return nOffset;
+    }
+
+    virtual uint32_t GetMsgID() const
+    {
+        return munMsgID;
+    }
+    virtual void SetMsgID(uint32_t nMsgID)
+    {
+        munMsgID = nMsgID;
+    }
+
+    virtual uint32_t GetBodyLength() const
+    {
+        return munSize;
+    }
+    virtual void SetBodyLength(uint32_t nLength)
+    {
+        munSize = nLength;
+    }
+
+
+    virtual size_t GetHeadLength() const
+    {
+        return NF_MIN_HEAD_LENGTH;
+    }
+
+
+    virtual size_t GetMsgLength() const
+    {
+        return munSize + NF_MIN_HEAD_LENGTH;
+    }
+
+    virtual void SetMsgLength(size_t nLength)
+    {
+
+    }
+protected:
+    uint32_t munSize;
+    uint16_t munMsgID;
+};
+
 
 class NFIPacket
 {
