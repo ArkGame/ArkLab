@@ -111,7 +111,6 @@ struct Worker
     Worker()
     {
         pBase = NULL;
-        pConnList = NULL;
         pThread = NULL;
         mnHeadLen = 0;
         bExit = false;
@@ -120,26 +119,30 @@ struct Worker
     inline Connection* GetFreeConn()
     {
         Connection* pConn = NULL;
-        if(pConnList->pHead != pConnList->pTail)
+        int nIndex = xCanUseConnList.front();
+        xCanUseConnList.pop_front();
+        if(nIndex < 0 || nIndex >= pConnList.size())
         {
-            pConn = pConnList->pHead;
-            pConnList->pHead = pConnList->pHead->pNext;
+            return NULL;
         }
 
+        pConn = pConnList[nIndex];
         return pConn;
     }
 
     inline void FreeConn(Connection* pConn)
     {
-        pConnList->pTail->pNext = pConn;
-        pConnList->pTail = pConn;
+        xCanUseConnList.push_back(pConn->nIndex);
     }
 
     struct event_base* pBase;
     std::thread* pThread;
-    ConnectionList* pConnList;
     int mnHeadLen;
     bool bExit;
+
+    std::vector<Connection*> pConnList; // nIndex ¡¶-- ¡·;
+    std::list<int> xCanUseConnList; //  ¿ÉÓÃµÄconnection nIndex
+    std::map<int, int> mmFDIndex; //  fd<--> nIndex; //
 
     NFLockFreeQueue<ReceiveData> mReceivemsgList;
     NFLockFreeQueue<SendData> mSendmsgList;

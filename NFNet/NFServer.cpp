@@ -63,27 +63,10 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
             return false;
         }
 
-        mxServer.pWorker[i].pConnList = new ConnectionList();
-        if(NULL == mxServer.pWorker[i].pConnList)
+        for(int iConecttionCount = 0; iConecttionCount < mxServer.nConnectNum; iConecttionCount++)
         {
-            delete[]mxServer.pWorker;
-            return false;
-        }
-
-        mxServer.pWorker[i].pConnList->pListConn = new Connection[mxServer.nConnectNum + 1];
-        mxServer.pWorker[i].pConnList->pHead = &mxServer.pWorker[i].pConnList->pListConn[0];
-        mxServer.pWorker[i].pConnList->pTail = &mxServer.pWorker[i].pConnList->pListConn[mxServer.nConnectNum];
-        for(int j = 0; j < mxServer.nConnectNum; ++j)
-        {
-            mxServer.pWorker[i].pConnList->pListConn[j].nIndex = j;
-            mxServer.pWorker[i].pConnList->pListConn[j].pNext = &mxServer.pWorker[i].pConnList->pListConn[j + 1];
-        }
-        mxServer.pWorker[i].pConnList->pListConn[mxServer.nConnectNum].nIndex = mxServer.nConnectNum;
-        mxServer.pWorker[i].pConnList->pListConn[mxServer.nConnectNum].pNext = NULL;
-
-        Connection* pConn = mxServer.pWorker[i].pConnList->pHead;
-        while(NULL != pConn)
-        {
+            Connection* pConn = new Connection();
+            pConn->nIndex = iConecttionCount;
             pConn->pBuffEvent = bufferevent_socket_new(mxServer.pWorker[i].pBase, -1, BEV_OPT_CLOSE_ON_FREE);
             if(NULL == pConn->pBuffEvent)
             {
@@ -105,7 +88,8 @@ bool NFServer::StartServer(int nPort, short nWorkerNum, unsigned int nMaxConnNum
 
             //bufferevent_set_timeouts(pConn->pBuffEvent, &xDelayReadTimeout, &xDelayWriteTimeout);
             pConn->pOwner = &mxServer.pWorker[i];
-            pConn = pConn->pNext;
+            mxServer.pWorker[i].pConnList.push_back(pConn);
+            mxServer.pWorker[i].xCanUseConnList.push_back(iConecttionCount);
         }
 
         mxServer.pWorker[i].pThread = new std::thread(&NFServer::ThreadWorkers, &mxServer.pWorker[i]);
@@ -190,11 +174,9 @@ void NFServer::StopServer()
 
         for(int i = 0; i < mxServer.nWorkerNum; ++i)
         {
-            if(NULL != mxServer.pWorker[i].pConnList)
+            for(int iConecttionCount = 0; iConecttionCount < mxServer.pWorker[i].pConnList.size(); ++iConecttionCount)
             {
-                delete []mxServer.pWorker[i].pConnList->pListConn;
-                delete mxServer.pWorker[i].pConnList;
-                mxServer.pWorker[i].pConnList = NULL;
+                delete mxServer.pWorker[i].pConnList[iConecttionCount];
             }
 
             event_base_free(mxServer.pWorker[i].pBase);
@@ -242,6 +224,36 @@ bool NFServer::SendMsg(const char* msg, const uint32_t nLen, const int nSockInde
     return true;
 }
 
+bool NFServer::SendMsgWithOutHead(const int16_t nMsgID, const char* msg, const uint32_t nLen, const int nSockIndex, bool bBroadcast /*= false*/)
+{
+    NFCPacket xPakcet((IMsgHead::NF_Head)mxServer.nHeadLen);
+    xPakcet.SetFd(nSockIndex);
+    IMsgHead* pHead = xPakcet.GetMsgHead();
+    if(NULL == pHead)
+    {
+        return false;
+    }
+
+    pHead->SetMsgID(nMsgID);
+    pHead->SetMsgLength(mxServer.nHeadLen + nLen);
+
+    std::string szHead;
+    szHead.resize(mxServer.nHeadLen);
+    char* pHeadString = new char[mxServer.nHeadLen];
+
+    if(pHead->EnCode(pHeadString) != mxServer.nHeadLen)
+    {
+        return false;
+    }
+
+    std::string strOutData;
+    strOutData.append(pHeadString, mxServer.nHeadLen);
+    strOutData.append(msg, nLen);
+
+    SendMsg(strOutData.c_str(), strOutData.size(), nSockIndex);
+    return false;
+}
+
 void NFServer::listener_cb(struct evconnlistener* listener, evutil_socket_t fd, struct sockaddr* sa, int socklen, void* user_data)
 {
     Server* pServer = (Server*)user_data;
@@ -266,9 +278,14 @@ void NFServer::socket_event_cb(struct bufferevent* buffer_event, short events, v
     {
         pConection->pOwner->mEventDataList.Push(xdata);
 
-        if(!(events & BEV_EVENT_CONNECTED))
+        if(events & BEV_EVENT_CONNECTED)
+        {
+            pConection->pOwner->mmFDIndex[pConection->nFD] = pConection->nIndex;
+        }
+        else
         {
             CloseConn(pConection);
+            pConection->pOwner->mmFDIndex.erase(pConection->nFD);
         }
     }
 }
@@ -405,7 +422,7 @@ int NFServer::ThreadWorkers(void* user_data)
             if(NULL == pConn->pBuffEvent)
             {
                 //TODO:delete former memory
-                return false;
+                continue;
             }
 
             ////set event callbacks
@@ -452,13 +469,17 @@ Connection* NFServer::GetConectionInWoker(Worker* pWorker, const int nSocket)
         return NULL;
     }
 
-    for(Connection* pData = pWorker->pConnList->pHead; pData != pWorker->pConnList->pTail; pData = pData->pNext)
+    std::map<int, int>::iterator iter = pWorker->mmFDIndex.find(nSocket);
+    if(iter == pWorker->mmFDIndex.end())
     {
-        if(NULL != pData && nSocket == pData->nFD)
-        {
-            return pData;
-        }
+        return NULL;
     }
 
-    return NULL;
+    const int nIndex = iter->second;
+    if(nIndex < 0 || nIndex >= pWorker->pConnList.size())
+    {
+        return NULL;
+    }
+
+    return pWorker->pConnList[nIndex];
 }

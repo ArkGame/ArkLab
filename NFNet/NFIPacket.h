@@ -525,8 +525,17 @@ public:
 
     virtual void SetMsgLength(size_t nLength)
     {
-
+        size_t nSize = nLength - NF_MIN_HEAD_LENGTH;
+        if(nSize < 0)
+        {
+            munSize = 0;
+        }
+        else
+        {
+            munSize = nSize;
+        }
     }
+
 protected:
     uint32_t munSize;
     uint16_t munMsgID;

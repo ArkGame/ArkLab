@@ -22,6 +22,7 @@ public:
 
     bool SendMsg(const NFCPacket& msg, const int nSockIndex, bool bBroadcast);
     bool SendMsg(const char* msg, const uint32_t nLen, const int nSockIndex, bool bBroadcast = false);
+    bool SendMsgWithOutHead(const int16_t nMsgID, const char* msg, const uint32_t nLen, const int nSockIndex, bool bBroadcast = false);
 
 protected:
     static void listener_cb(struct evconnlistener* listener, evutil_socket_t fd, struct sockaddr* sa, int socklen, void* user_data);
