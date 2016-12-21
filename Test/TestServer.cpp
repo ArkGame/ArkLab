@@ -60,7 +60,7 @@ public:
 
         std::string strMsg = "11111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222223333333333333333333333444";
 
-        pNet->SendMsg(strMsg.c_str(), strMsg.size(), msg.GetFd(), false);
+        pNet->SendMsgWithOutHead(1, strMsg.c_str(), strMsg.size(), msg.GetFd(), false);
         return 1;
     }
 
