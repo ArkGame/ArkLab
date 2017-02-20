@@ -42,7 +42,10 @@ using steady_timer_t = boost::asio::steady_timer;
 using duration_t = boost::asio::steady_timer::duration;
 
 class connection;
+class router_bse;
 class server;
+
+using connection_ptr = std::shared_ptr<connection>;
 
 static const auto asio_error = boost::asio::placeholders::error;
 

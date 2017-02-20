@@ -13,6 +13,19 @@
     <ClInclude Include="connection.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="consts.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="connection_impl.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="ios_wrapper_impl.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="ios_wrapper.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="plan.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">

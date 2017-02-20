@@ -3,15 +3,17 @@
 namespace ArkNet
 {
 
-template<typename CodecPolicy>
 class server
 {
 public:
-    using codec_policy = CodecPolicy;
-    using connection_ptr = std::shared_ptr<connection>;
     using connection_weak_ptr = std::weak_ptr<connection>;
+    using router_t = typename router;
+    using invoker_t = typename router_t::invoker_t;
+    using sub_container = std::multimap<std::string, connection_weak_ptr>;
 
 public:
+
+
 protected:
 private:
 };

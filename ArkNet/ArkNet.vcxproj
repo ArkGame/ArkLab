@@ -12,8 +12,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="connection.hpp" />
+    <ClInclude Include="connection_impl.hpp" />
+    <ClInclude Include="consts.h" />
     <ClInclude Include="header.hpp" />
+    <ClInclude Include="ios_wrapper.hpp" />
+    <ClInclude Include="ios_wrapper_impl.hpp" />
     <ClInclude Include="io_service_pool.hpp" />
+    <ClInclude Include="plan.hpp" />
     <ClInclude Include="server.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
