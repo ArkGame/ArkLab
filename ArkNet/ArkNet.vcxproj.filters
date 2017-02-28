@@ -26,6 +26,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="plan.hpp" />
+    <ClInclude Include="router.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">

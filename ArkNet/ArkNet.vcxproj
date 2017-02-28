@@ -19,6 +19,7 @@
     <ClInclude Include="ios_wrapper_impl.hpp" />
     <ClInclude Include="io_service_pool.hpp" />
     <ClInclude Include="plan.hpp" />
+    <ClInclude Include="router.hpp" />
     <ClInclude Include="server.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

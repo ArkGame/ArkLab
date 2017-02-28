@@ -13,8 +13,8 @@ class connection : public std::enable_shared_from_this<connection>
 {
 public:
 
-    template <typename CodecPolicy> friend class serever;
-    template <typename CodecPolicy> friend class router;
+    friend class serever;
+    friend class router;
     friend class ios_wrapper;
 
     using connection_ptr = std::shared_ptr<connection>;
